@@ -18,6 +18,8 @@ contract StakeTest is Test {
         token.approve(address(stake), 100_000e18);
         stake.stake(100_000e18, address(token));
         assertEq(stake.balances(address(this), address(token)), 100_000e18);
+        assertEq(token.balanceOf(address(stake)), 100_000e18);
+        assertEq(token.balanceOf(address(this)), 0);
     }
 
     function testWithdraw() public {
@@ -26,5 +28,6 @@ contract StakeTest is Test {
         stake.withdraw(100_000e18, address(token));
         assertEq(stake.balances(address(this), address(token)), 0);
         assertEq(token.balanceOf(address(this)), 100_000e18);
+        assertEq(token.balanceOf(address(stake)), 0);
     }
 }  
