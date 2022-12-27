@@ -63,14 +63,13 @@ contract RIFTXR is ERC721A, Ownable{
      */
     uint256 constant MINT_PRICE = 0.05 ether;
     /**
-    *@notice -Variable to enable public minting 
+    *@notice -Variable to indicate public minting state(Enabled/Disabled)
      */
     bool public mintEnabled;
     /** 
      *@notice – Maximum token supply
-     * @dev – A constant and unchanged value throughout the project
      */
-    uint256 constant MAX_SUPPLY = 500;
+    uint256 immutable MAX_SUPPLY = 500;
     /*
      * @notice – MerkleProof root for verifying allowlist addresses
      * @notice – Set by `setMerkleRoot()`
@@ -100,12 +99,6 @@ contract RIFTXR is ERC721A, Ownable{
      */
      constructor() ERC721A("RIFTXR", "RFT") {
     }
-
-
-
-
-
-
 
       /* ============OnlyOwner Functions, hehe.=============== */
 
@@ -177,11 +170,6 @@ contract RIFTXR is ERC721A, Ownable{
     
 
        /*================MODIFIERS================== */
-    modifier onlyEOA() {
-     if(msg.sender != tx.origin ) 
-     revert RIFT__onlyEOA();
-     _;
-    }
        modifier isCorrectPayment(uint256 price, uint256 numberOfTokens) {
         if((price * numberOfTokens) != msg.value) 
         revert RIFT__incorrectPayment();
@@ -198,7 +186,7 @@ contract RIFTXR is ERC721A, Ownable{
         _;
     }
      modifier maxPassesPerWallet(uint256 numberOfTokens) {
-         if(_numberMinted(msg.sender) > 3)
+         if(_numberMinted(msg.sender) >= 3)
             revert RIFT__maxMintablePassesExceeded();
             _;
      }
@@ -226,10 +214,9 @@ contract RIFTXR is ERC721A, Ownable{
      * @param numberOfTokens - Number of tokens to mint
      * @param _merkleProof - merkleproof of the address that is allowed to mint
      */
-    function mint(uint256 numberOfTokens, bytes32[] calldata _merkleProof) 
+    function mintWL(uint256 numberOfTokens, bytes32[] calldata _merkleProof) 
     external
     payable
-    onlyEOA
     isMintEnabled
     checkNumOfTokens(numberOfTokens)
     isCorrectPayment(MINT_PRICE, numberOfTokens)
@@ -245,10 +232,9 @@ contract RIFTXR is ERC721A, Ownable{
     function mintPublic(uint256 numberOfTokens) 
     external
     payable
-    onlyEOA
     checkNumOfTokens(numberOfTokens)
     isMintEnabled
-    isCorrectPayment(MINT_PRICE, numberOfTokens)
+    //isCorrectPayment(MINT_PRICE, numberOfTokens)
     enoughPassesRemaining(numberOfTokens)
     maxPassesPerWallet(numberOfTokens) {
         _mint(msg.sender, numberOfTokens);
@@ -263,8 +249,8 @@ contract RIFTXR is ERC721A, Ownable{
  /**
  *@dev Withdrawal Functions
   */
-     function withdraw() external onlyOwner{
-        (bool success, ) = owner().call{value: address(this).balance}("");
+     function withdraw(address receiver) external onlyOwner{
+        (bool success, ) = receiver.call{value: address(this).balance}("");
         if(success == false) revert RIFT__transferFailed();
      }
 
@@ -276,6 +262,6 @@ contract RIFTXR is ERC721A, Ownable{
 
     function withdrawERC721Tokens(address _tokenAddress, uint256 tokenId) external onlyOwner {
         IERC721 token = IERC721(_tokenAddress);
-        token.safeTransferFrom(address(this), msg.sender, tokenId);
+        token.transferFrom(address(this), msg.sender, tokenId);
     }
 }
